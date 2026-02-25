@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AccessibilityToolbar from "./AccessibilityToolbar";
 import { Menu, Globe } from "lucide-react";
 import { useLanguage, langLabels } from "@/contexts/LanguageContext";
+import AuthPanel from "./AuthPanel";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -30,8 +31,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </div>
               </div>
             </div>
-            {/* Language Toggle */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
+              <AuthPanel />
+              <div className="flex items-center gap-1.5 shrink-0">
               <Globe className="h-3.5 w-3.5 text-primary-foreground" />
               <select
                 value={lang}
@@ -44,6 +46,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   </option>
                 ))}
               </select>
+              </div>
             </div>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-auto">

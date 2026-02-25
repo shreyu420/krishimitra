@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { Upload, Download, Volume2, VolumeX, Share2, AlertTriangle, CheckCircle, Leaf } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -6,6 +8,8 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 const LeafDiagnosis = () => {
   const [imageUploaded, setImageUploaded] = useState(false);
   const { t, lang } = useLanguage();
+  const { token } = useAuth();
+  const [saveMessage, setSaveMessage] = useState("");
   const { speak, stop, isSpeaking } = useTextToSpeech(lang);
 
   const handleVoiceAdvisory = () => {
@@ -25,7 +29,29 @@ const LeafDiagnosis = () => {
 
       <div className="gov-card">
         <h3 className="text-sm font-semibold mb-3">{t("leaf.uploadTitle")}</h3>
-        <div className="gov-upload-box" onClick={() => setImageUploaded(true)}>
+        <div className="gov-upload-box" onClick={async () => {
+          setImageUploaded(true);
+          if (!token) {
+            setSaveMessage("Login to store diagnosis history.");
+            return;
+          }
+          try {
+            await apiRequest("/api/diagnoses", {
+              method: "POST",
+              token,
+              body: {
+                crop: "Tomato",
+                disease: "Early Blight",
+                confidence: 78,
+                severity: "moderate",
+                advisory: "Spray Mancozeb 2g/L every 7 days and monitor fungal spread.",
+              },
+            });
+            setSaveMessage("Diagnosis saved to your account.");
+          } catch (error) {
+            setSaveMessage(error instanceof Error ? error.message : "Unable to save diagnosis");
+          }
+        }}>
           <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">{t("leaf.uploadText")}</p>
           <p className="text-xs text-muted-foreground mt-1">{t("leaf.uploadFormat")}</p>
@@ -36,6 +62,7 @@ const LeafDiagnosis = () => {
             {t("leaf.uploadSuccess")}
           </div>
         )}
+        {saveMessage && <p className="text-xs text-muted-foreground mt-2">{saveMessage}</p>}
       </div>
 
       {imageUploaded && (
