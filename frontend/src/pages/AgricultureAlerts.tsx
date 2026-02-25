@@ -1,17 +1,32 @@
+import { useEffect, useState } from "react";
 import { Bell, AlertTriangle, Bug, Droplets, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { apiRequest } from "@/lib/api";
+
+type Alert = {
+  id: number;
+  severity: "high" | "medium" | "low";
+  title: string;
+  description: string;
+  date: string;
+  sourceUrl?: string;
+};
+
+const iconMap = {
+  high: AlertTriangle,
+  medium: Bug,
+  low: Droplets,
+};
 
 const AgricultureAlerts = () => {
   const { t } = useLanguage();
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
-  const alerts = [
-    { severity: "high", icon: AlertTriangle, titleKey: "alerts.alert1.title", descKey: "alerts.alert1.desc", date: "19 Feb 2026" },
-    { severity: "medium", icon: Bug, titleKey: "alerts.alert2.title", descKey: "alerts.alert2.desc", date: "18 Feb 2026" },
-    { severity: "low", icon: Droplets, titleKey: "alerts.alert3.title", descKey: "alerts.alert3.desc", date: "17 Feb 2026" },
-  ];
-
-  const newsKeys = ["alerts.news1", "alerts.news2", "alerts.news3", "alerts.news4", "alerts.news5"];
-  const newsDates = ["19 Feb 2026", "18 Feb 2026", "17 Feb 2026", "16 Feb 2026", "15 Feb 2026"];
+  useEffect(() => {
+    apiRequest<{ alerts: Alert[] }>("/api/alerts")
+      .then((data) => setAlerts(data.alerts))
+      .catch(() => setAlerts([]));
+  }, []);
 
   const severityStyles: Record<string, string> = {
     high: "border-l-destructive",
@@ -43,36 +58,39 @@ const AgricultureAlerts = () => {
       <div>
         <h3 className="text-sm font-semibold mb-3">{t("alerts.priority")}</h3>
         <div className="space-y-3">
-          {alerts.map((alert, i) => (
-            <div key={i} className={`gov-alert-card !border-l-4 ${severityStyles[alert.severity]}`}>
-              <div className="flex items-start gap-3">
-                <alert.icon className={`h-5 w-5 shrink-0 mt-0.5 ${alert.severity === "high" ? "text-destructive" : alert.severity === "medium" ? "text-gov-orange" : "text-primary"}`} />
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-sm font-semibold">{t(alert.titleKey)}</h4>
-                    <span className={`gov-badge ${severityBadge[alert.severity]}`}>{t(severityLabel[alert.severity])}</span>
+          {alerts.map((alert) => {
+            const Icon = iconMap[alert.severity] || AlertTriangle;
+            return (
+              <div key={alert.id} className={`gov-alert-card !border-l-4 ${severityStyles[alert.severity]}`}>
+                <div className="flex items-start gap-3">
+                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${alert.severity === "high" ? "text-destructive" : alert.severity === "medium" ? "text-gov-orange" : "text-primary"}`} />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-sm font-semibold">{alert.title}</h4>
+                      <span className={`gov-badge ${severityBadge[alert.severity]}`}>{t(severityLabel[alert.severity])}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{alert.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{new Date(alert.date).toLocaleDateString()}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{t(alert.descKey)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alert.date}</p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       <div className="gov-card">
         <h3 className="text-sm font-semibold mb-3">{t("alerts.news")}</h3>
         <div className="divide-y divide-border">
-          {newsKeys.map((key, i) => (
-            <div key={key} className="py-3 flex items-center justify-between gap-3">
+          {alerts.map((alert) => (
+            <div key={`news-${alert.id}`} className="py-3 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium">{t(key)}</p>
-                <p className="text-xs text-muted-foreground">{newsDates[i]}</p>
+                <p className="text-sm font-medium">{alert.title}</p>
+                <p className="text-xs text-muted-foreground">{new Date(alert.date).toLocaleDateString()}</p>
               </div>
-              <button className="gov-btn-outline !py-1 !px-3 text-xs flex items-center gap-1 shrink-0">
+              <a href={alert.sourceUrl} target="_blank" rel="noreferrer" className="gov-btn-outline !py-1 !px-3 text-xs flex items-center gap-1 shrink-0">
                 {t("alerts.readMore")} <ExternalLink className="h-3 w-3" />
-              </button>
+              </a>
             </div>
           ))}
         </div>
